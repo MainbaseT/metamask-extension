@@ -4,8 +4,8 @@ import classnames from 'classnames';
 import CurrencyDisplay from '../../ui/currency-display';
 import UserPreferencedCurrencyDisplay from '../user-preferenced-currency-display';
 import HexToDecimal from '../../ui/hex-to-decimal';
-import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
 import { EtherDenomination } from '../../../../shared/constants/common';
+import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
 import TransactionBreakdownRow from './transaction-breakdown-row';
 
 export default class TransactionBreakdown extends PureComponent {
@@ -30,6 +30,8 @@ export default class TransactionBreakdown extends PureComponent {
     hexGasTotal: PropTypes.string,
     isEIP1559Transaction: PropTypes.bool,
     l1HexGasTotal: PropTypes.string,
+    sourceAmountFormatted: PropTypes.string,
+    destinationAmountFormatted: PropTypes.string,
   };
 
   static defaultProps = {
@@ -55,6 +57,8 @@ export default class TransactionBreakdown extends PureComponent {
       hexGasTotal,
       isEIP1559Transaction,
       l1HexGasTotal,
+      sourceAmountFormatted,
+      destinationAmountFormatted,
     } = this.props;
     return (
       <div className={classnames('transaction-breakdown', className)}>
@@ -67,16 +71,38 @@ export default class TransactionBreakdown extends PureComponent {
             />
           )}
         </TransactionBreakdownRow>
-        <TransactionBreakdownRow
-          title={isTokenApprove ? t('spendingCap') : t('amount')}
-        >
-          <span
-            className="transaction-breakdown__value transaction-breakdown__value--amount"
-            data-testid="transaction-breakdown-value-amount"
+        {sourceAmountFormatted && (
+          <TransactionBreakdownRow title={t('amountSent')}>
+            <span
+              className="transaction-breakdown__value transaction-breakdown__value--amount"
+              data-testid="transaction-breakdown-value-amount"
+            >
+              {sourceAmountFormatted}
+            </span>
+          </TransactionBreakdownRow>
+        )}
+        {destinationAmountFormatted && (
+          <TransactionBreakdownRow title={t('amountReceived')}>
+            <span
+              className="transaction-breakdown__value transaction-breakdown__value--amount"
+              data-testid="transaction-breakdown-value-amount"
+            >
+              {destinationAmountFormatted}
+            </span>
+          </TransactionBreakdownRow>
+        )}
+        {!sourceAmountFormatted && (
+          <TransactionBreakdownRow
+            title={isTokenApprove ? t('spendingCap') : t('amount')}
           >
-            {primaryCurrency}
-          </span>
-        </TransactionBreakdownRow>
+            <span
+              className="transaction-breakdown__value transaction-breakdown__value--amount"
+              data-testid="transaction-breakdown-value-amount"
+            >
+              {primaryCurrency}
+            </span>
+          </TransactionBreakdownRow>
+        )}
         <TransactionBreakdownRow
           title={
             l1HexGasTotal

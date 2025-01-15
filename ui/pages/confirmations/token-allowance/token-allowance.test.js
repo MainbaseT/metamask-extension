@@ -2,11 +2,12 @@ import React from 'react';
 import configureMockStore from 'redux-mock-store';
 import { act, fireEvent } from '@testing-library/react';
 import thunk from 'redux-thunk';
-import { NetworkType } from '@metamask/controller-utils';
-import { NetworkStatus } from '@metamask/network-controller';
-import { EthAccountType, EthMethod } from '@metamask/keyring-api';
+import { EthAccountType } from '@metamask/keyring-api';
 import { renderWithProvider } from '../../../../test/lib/render-helpers';
 import { KeyringType } from '../../../../shared/constants/keyring';
+import { ETH_EOA_METHODS } from '../../../../shared/constants/eth-methods';
+import { mockNetworkState } from '../../../../test/stub/networks';
+import { CHAIN_IDS } from '../../../../shared/constants/network';
 import TokenAllowance from './token-allowance';
 
 const testTokenAddress = '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F';
@@ -15,6 +16,7 @@ const state = {
     customTokenAmount: '1',
   },
   metamask: {
+    ...mockNetworkState({ chainId: CHAIN_IDS.MAINNET }),
     accounts: {
       '0x0dcd5d886577d5081b0c52e242ef29e70be3e7bc': {
         address: '0x0dcd5d886577d5081b0c52e242ef29e70be3e7bc',
@@ -34,7 +36,7 @@ const state = {
             },
           },
           options: {},
-          methods: [...Object.values(EthMethod)],
+          methods: ETH_EOA_METHODS,
           type: EthAccountType.Eoa,
         },
         '07c2cfec-36c9-46c4-8115-3836d3ac9047': {
@@ -47,7 +49,7 @@ const state = {
             },
           },
           options: {},
-          methods: [...Object.values(EthMethod)],
+          methods: ETH_EOA_METHODS,
           type: EthAccountType.Eoa,
         },
       },
@@ -70,17 +72,7 @@ const state = {
         name: 'Address Book Account 1',
       },
     ],
-    providerConfig: {
-      type: 'mainnet',
-      nickname: '',
-    },
-    selectedNetworkClientId: NetworkType.mainnet,
-    networksMetadata: {
-      [NetworkType.mainnet]: {
-        EIPS: { 1559: true },
-        status: NetworkStatus.Available,
-      },
-    },
+    ...mockNetworkState({ chainId: CHAIN_IDS.MAINNET, nickname: 'mainnet' }),
     preferences: {
       showFiatInTestnets: true,
     },
@@ -111,6 +103,19 @@ const state = {
     ],
     nextNonce: 1,
     customNonceValue: '',
+    pendingApprovals: {
+      '741bad30-45b6-11ef-b6ec-870d18dd6c01': {
+        id: '741bad30-45b6-11ef-b6ec-870d18dd6c01',
+        origin: 'http://127.0.0.1:8080',
+        type: 'transaction',
+        time: 1721383540624,
+        requestData: {
+          txId: '741bad30-45b6-11ef-b6ec-870d18dd6c01',
+        },
+        requestState: null,
+        expectsResult: true,
+      },
+    },
   },
   history: {
     mostRecentOverviewPage: '/',
@@ -198,7 +203,7 @@ describe('TokenAllowancePage', () => {
       status: 'unapproved',
       originalGasEstimate: '0xea60',
       userEditedGasLimit: false,
-      chainId: '0x3',
+      chainId: CHAIN_IDS.MAINNET,
       loadingDefaults: false,
       dappSuggestedGasFees: {
         gasPrice: '0x4a817c800',

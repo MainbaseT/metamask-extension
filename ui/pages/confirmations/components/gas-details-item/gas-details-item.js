@@ -4,6 +4,7 @@ import classNames from 'classnames';
 
 import { useSelector } from 'react-redux';
 import {
+  Box,
   Icon,
   IconName,
   IconSize,
@@ -12,13 +13,13 @@ import {
 import {
   IconColor,
   TextColor,
+  TextVariant,
 } from '../../../../helpers/constants/design-system';
 import { PRIMARY, SECONDARY } from '../../../../helpers/constants/common';
 import { PriorityLevels } from '../../../../../shared/constants/gas';
 import {
-  getPreferences,
+  getShouldShowFiat,
   getTxData,
-  getUseCurrencyRateCheck,
   transactionFeeSelector,
 } from '../../../../selectors';
 import { getCurrentDraftTransaction } from '../../../../ducks/send';
@@ -30,7 +31,6 @@ import { useDraftTransactionWithTxParams } from '../../hooks/useDraftTransaction
 import { useGasFeeContext } from '../../../../contexts/gasFee';
 import { useI18nContext } from '../../../../hooks/useI18nContext';
 
-import Box from '../../../../components/ui/box';
 import LoadingHeartBeat from '../../../../components/ui/loading-heartbeat';
 import EditGasFeeIcon from '../edit-gas-fee-icon/edit-gas-fee-icon';
 import GasTiming from '../gas-timing/gas-timing.component';
@@ -43,12 +43,14 @@ const GasDetailsItem = ({
   userAcknowledgedGasMissing = false,
 }) => {
   const t = useI18nContext();
+  const shouldShowFiat = useSelector(getShouldShowFiat);
 
   const txData = useSelector(getTxData);
   const { layer1GasFee } = txData;
 
   const draftTransaction = useSelector(getCurrentDraftTransaction);
   const transactionData = useDraftTransactionWithTxParams();
+
   const {
     hexMinimumTransactionFee: draftHexMinimumTransactionFee,
     hexMaximumTransactionFee: draftHexMaximumTransactionFee,
@@ -65,9 +67,6 @@ const GasDetailsItem = ({
     supportsEIP1559,
   } = useGasFeeContext();
 
-  const { useNativeCurrencyAsPrimaryCurrency } = useSelector(getPreferences);
-
-  const useCurrencyRateCheck = useSelector(getUseCurrencyRateCheck);
   const getTransactionFeeTotal = useMemo(() => {
     if (layer1GasFee) {
       return sumHexes(hexMinimumTransactionFee, layer1GasFee);
@@ -102,40 +101,52 @@ const GasDetailsItem = ({
     if (supportsEIP1559 && isNetworkBusy) {
       return (
         <>
-          <Text>{t('estimatedFee')}</Text>
-          <Tooltip interactive position="top" html={t('networkIsBusy')}>
-            &nbsp;&nbsp;
+          {t('estimatedFee')}
+          <Tooltip
+            wrapperClassName="gas-details-item__dangerTooltip"
+            interactive
+            position="top"
+            html={t('networkIsBusy')}
+          >
             <Icon
               data-testid="network-busy-tooltip"
               name={IconName.Danger}
               size={IconSize.Sm}
               color={IconColor.errorDefault}
-              marginTop={2}
             />
           </Tooltip>
         </>
       );
     }
-    return <Text>{t('estimatedFee')}</Text>;
+    return <>{t('estimatedFee')}</>;
   };
   return (
     <TransactionDetailItem
       key="gas-details-item"
       data-testid={dataTestId}
       detailTitle={detailTitle()}
-      detailTitleColor={TextColor.textDefault}
       detailText={
         Object.keys(draftTransaction).length === 0 && (
-          <div className="gas-details-item__currency-container">
+          <div
+            className="gas-details-item__currency-container"
+            style={{ width: '100%' }}
+          >
             <LoadingHeartBeat estimateUsed={estimateUsed} />
             <EditGasFeeIcon
               userAcknowledgedGasMissing={userAcknowledgedGasMissing}
             />
-            {useCurrencyRateCheck && (
+            {shouldShowFiat && (
               <UserPreferencedCurrencyDisplay
+                paddingInlineStart={1}
+                suffixProps={{
+                  variant: TextVariant.bodyMdBold,
+                }}
+                textProps={{
+                  variant: TextVariant.bodyMdBold,
+                }}
                 type={SECONDARY}
                 value={getTransactionFeeTotal}
-                hideLabel={Boolean(useNativeCurrencyAsPrimaryCurrency)}
+                hideLabel // Label not required here as it will always display fiat value.
               />
             )}
           </div>
@@ -145,12 +156,21 @@ const GasDetailsItem = ({
         <div className="gas-details-item__currency-container">
           <LoadingHeartBeat estimateUsed={estimateUsed} />
           <UserPreferencedCurrencyDisplay
+            suffixProps={{
+              variant: TextVariant.bodyMd,
+              color: TextColor.textAlternative,
+            }}
+            textProps={{
+              variant: TextVariant.bodyMd,
+              color: TextColor.textAlternative,
+            }}
             type={PRIMARY}
             value={getTransactionFeeTotal || draftHexMinimumTransactionFee}
-            hideLabel={!useNativeCurrencyAsPrimaryCurrency}
+            // Label required here as it will always display crypto value
           />
         </div>
       }
+      hasDetailTextInSeparateRow
       subText={
         <>
           <Box
@@ -163,28 +183,39 @@ const GasDetailsItem = ({
             })}
           >
             <LoadingHeartBeat estimateUsed={estimateUsed} />
-            <Box marginRight={1}>
-              <strong>
+            <Box>
+              <Text
+                color={TextColor.textAlternative}
+                variant={TextVariant.bodySmMedium}
+              >
                 {(estimateUsed === PriorityLevels.high ||
                   estimateUsed === PriorityLevels.dappSuggestedHigh) &&
                   '⚠ '}
                 {t('editGasSubTextFeeLabel')}
-              </strong>
+              </Text>
             </Box>
-            <div
+            <Box
               key="editGasSubTextFeeValue"
               className="gas-details-item__currency-container"
+              paddingInlineStart={1}
             >
               <LoadingHeartBeat estimateUsed={estimateUsed} />
               <UserPreferencedCurrencyDisplay
                 key="editGasSubTextFeeAmount"
+                suffixProps={{
+                  color: TextColor.textAlternative,
+                  variant: TextVariant.bodySm,
+                }}
+                textProps={{
+                  color: TextColor.textAlternative,
+                  variant: TextVariant.bodySm,
+                }}
                 type={PRIMARY}
                 value={
                   getMaxTransactionFeeTotal || draftHexMaximumTransactionFee
                 }
-                hideLabel={!useNativeCurrencyAsPrimaryCurrency}
               />
-            </div>
+            </Box>
           </Box>
         </>
       }

@@ -45,6 +45,7 @@ import ExperimentalArea from '../../components/app/flask/experimental-area';
 import OnboardingSuccessful from '../institutional/onboarding-successful/onboarding-successful';
 import { RemindSRP } from '../institutional/remind-srp/remind-srp';
 ///: END:ONLY_INCLUDE_IF
+import { submitRequestToBackgroundAndCatch } from '../../components/app/toast-master/utils';
 import OnboardingFlowSwitch from './onboarding-flow-switch/onboarding-flow-switch';
 import CreatePassword from './create-password/create-password';
 import ReviewRecoveryPhrase from './recovery-phrase/review-recovery-phrase';
@@ -69,6 +70,10 @@ export default function OnboardingFlow() {
   const nextRoute = useSelector(getFirstTimeFlowTypeRouteAfterUnlock);
   const isFromReminder = new URLSearchParams(search).get('isFromReminder');
   const trackEvent = useContext(MetaMetricsContext);
+
+  useEffect(() => {
+    setOnboardingDate();
+  }, []);
 
   useEffect(() => {
     if (completedOnboarding && !isFromReminder) {
@@ -234,4 +239,8 @@ export default function OnboardingFlow() {
       )}
     </div>
   );
+}
+
+function setOnboardingDate() {
+  submitRequestToBackgroundAndCatch('setOnboardingDate');
 }

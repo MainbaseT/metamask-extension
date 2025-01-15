@@ -1,6 +1,7 @@
 import { addHexPrefix, isHexString } from 'ethereumjs-util';
 import { createSelector } from 'reselect';
 import { mergeGasFeeEstimates } from '@metamask/transaction-controller';
+import { RpcEndpointType } from '@metamask/network-controller';
 import { AlertTypes } from '../../../shared/constants/alerts';
 import {
   GasEstimateTypes,
@@ -16,8 +17,9 @@ import {
   checkNetworkAndAccountSupports1559,
   getAddressBook,
   getSelectedNetworkClientId,
-  getSelectedInternalAccount,
-} from '../../selectors';
+  getNetworkConfigurationsByChainId,
+} from '../../selectors/selectors';
+import { getSelectedInternalAccount } from '../../selectors/accounts';
 import * as actionConstants from '../../store/actionConstants';
 import { updateTransactionGasFees } from '../../store/actions';
 import { setCustomGasLimit, setCustomGasPrice } from '../gas/gas.duck';
@@ -31,7 +33,6 @@ const initialState = {
   transactions: [],
   networkConfigurations: {},
   addressBook: [],
-  contractExchangeRates: {},
   confirmationExchangeRates: {},
   pendingTokens: {},
   customNonceValue: '',
@@ -46,24 +47,23 @@ const initialState = {
     showExtensionInFullSizeView: false,
     showFiatInTestnets: false,
     showTestNetworks: false,
-    smartTransactionsOptInStatus: false,
-    useNativeCurrencyAsPrimaryCurrency: true,
+    smartTransactionsOptInStatus: true,
     petnamesEnabled: true,
     featureNotificationsEnabled: false,
+    privacyMode: false,
+    showMultiRpcModal: false,
   },
   firstTimeFlowType: null,
   completedOnboarding: false,
   knownMethodData: {},
   use4ByteResolution: true,
   participateInMetaMetrics: null,
+  dataCollectionForMarketing: null,
   nextNonce: null,
   currencyRates: {
     ETH: {
       conversionRate: null,
     },
-  },
-  providerConfig: {
-    ticker: 'ETH',
   },
 };
 
@@ -162,6 +162,12 @@ export default function reduceMetamask(state = initialState, action) {
         participateInMetaMetrics: action.value,
       };
 
+    case actionConstants.SET_DATA_COLLECTION_FOR_MARKETING:
+      return {
+        ...metamaskState,
+        dataCollectionForMarketing: action.value,
+      };
+
     case actionConstants.CLOSE_WELCOME_SCREEN:
       return {
         ...metamaskState,
@@ -220,15 +226,6 @@ export default function reduceMetamask(state = initialState, action) {
         confirmationExchangeRates: action.value,
       };
 
-    ///: BEGIN:ONLY_INCLUDE_IF(desktop)
-    case actionConstants.FORCE_DISABLE_DESKTOP: {
-      return {
-        ...metamaskState,
-        desktopEnabled: false,
-      };
-    }
-    ///: END:ONLY_INCLUDE_IF
-
     default:
       return metamaskState;
   }
@@ -281,11 +278,37 @@ export const getAlertEnabledness = (state) => state.metamask.alertEnabledness;
  * Get the provider configuration for the current selected network.
  *
  * @param {object} state - Redux state object.
- * @returns {import('../../../app/scripts/controllers/network/network-controller').NetworkControllerState['providerConfig']} The provider configuration for the current selected network.
  */
-export function getProviderConfig(state) {
-  return state.metamask.providerConfig;
-}
+export const getProviderConfig = createSelector(
+  (state) => getNetworkConfigurationsByChainId(state),
+  (state) => getSelectedNetworkClientId(state),
+  (networkConfigurationsByChainId, selectedNetworkClientId) => {
+    for (const network of Object.values(networkConfigurationsByChainId)) {
+      for (const rpcEndpoint of network.rpcEndpoints) {
+        if (rpcEndpoint.networkClientId === selectedNetworkClientId) {
+          const blockExplorerUrl =
+            network.blockExplorerUrls?.[network.defaultBlockExplorerUrlIndex];
+
+          return {
+            chainId: network.chainId,
+            ticker: network.nativeCurrency,
+            rpcPrefs: { ...(blockExplorerUrl && { blockExplorerUrl }) },
+            type:
+              rpcEndpoint.type === RpcEndpointType.Custom
+                ? 'rpc'
+                : rpcEndpoint.networkClientId,
+            ...(rpcEndpoint.type === RpcEndpointType.Custom && {
+              id: rpcEndpoint.networkClientId,
+              nickname: network.name,
+              rpcUrl: rpcEndpoint.url,
+            }),
+          };
+        }
+      }
+    }
+    return undefined; // should not be reachable
+  },
+);
 
 export const getUnconnectedAccountAlertEnabledness = (state) =>
   getAlertEnabledness(state)[AlertTypes.unconnectedAccount];
@@ -368,6 +391,7 @@ export function isNotEIP1559Network(state) {
  */
 export function isEIP1559Network(state, networkClientId) {
   const selectedNetworkClientId = getSelectedNetworkClientId(state);
+
   return (
     state.metamask.networksMetadata?.[
       networkClientId ?? selectedNetworkClientId

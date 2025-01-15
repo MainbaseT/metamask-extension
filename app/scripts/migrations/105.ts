@@ -1,11 +1,8 @@
-import {
-  EthAccountType,
-  InternalAccount,
-  EthMethod,
-} from '@metamask/keyring-api';
+import { EthAccountType, InternalAccount } from '@metamask/keyring-api';
 import { sha256FromString } from 'ethereumjs-util';
 import { v4 as uuid } from 'uuid';
 import { cloneDeep } from 'lodash';
+import { ETH_EOA_METHODS } from '../../../shared/constants/eth-methods';
 
 type VersionedData = {
   meta: { version: number };
@@ -100,6 +97,7 @@ function createInternalAccountsForAccountsController(
       metadata: {
         name: identity.name,
         lastSelected: identity.lastSelected ?? undefined,
+        importTime: 0,
         keyring: {
           // This is default HD Key Tree type because the keyring is encrypted
           // during migration, the type will get updated when the during the
@@ -107,14 +105,7 @@ function createInternalAccountsForAccountsController(
           type: 'HD Key Tree',
         },
       },
-      methods: [
-        EthMethod.Sign,
-        EthMethod.PersonalSign,
-        EthMethod.SignTransaction,
-        EthMethod.SignTypedDataV1,
-        EthMethod.SignTypedDataV3,
-        EthMethod.SignTypedDataV4,
-      ],
+      methods: ETH_EOA_METHODS,
       type: EthAccountType.Eoa,
     };
   });

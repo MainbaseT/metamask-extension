@@ -1,5 +1,15 @@
 {
   "data": {
+    "AuthenticationController": { "isSignedIn": "boolean" },
+    "UserStorageController": { "isProfileSyncingEnabled": true },
+    "NotificationServicesController": {
+      "subscriptionAccountsSeen": "object",
+      "isFeatureAnnouncementsEnabled": "boolean",
+      "isNotificationServicesEnabled": "boolean",
+      "isMetamaskNotificationsFeatureSeen": "boolean",
+      "metamaskNotificationsList": "object",
+      "metamaskNotificationsReadList": "object"
+    },
     "AccountsController": {
       "internalAccounts": { "selectedAccount": "string", "accounts": "object" }
     },
@@ -9,7 +19,9 @@
       "web3ShimUsageOrigins": "object"
     },
     "AnnouncementController": { "announcements": "object" },
-    "NetworkOrderController": { "orderedNetworkList": {} },
+    "NetworkOrderController": {
+      "orderedNetworkList": { "0": "object", "1": "object", "2": "object" }
+    },
     "AccountOrderController": {
       "pinnedAccountList": {},
       "hiddenAccountList": {}
@@ -20,14 +32,16 @@
       "connectedStatusPopoverHasBeenShown": true,
       "termsOfUseLastAgreed": "number",
       "defaultHomeActiveTabName": null,
-      "popupGasPollTokens": "object",
-      "notificationGasPollTokens": "object",
       "fullScreenGasPollTokens": "object",
+      "notificationGasPollTokens": "object",
+      "popupGasPollTokens": "object",
       "qrHardware": {},
       "recoveryPhraseReminderHasBeenShown": true,
       "recoveryPhraseReminderLastShown": "number",
       "showTestnetMessageInDropdown": true,
       "trezorModel": null,
+      "newPrivacyPolicyToastClickedOrClosed": "boolean",
+      "newPrivacyPolicyToastShownDate": "number",
       "usedNetworks": {
         "0x1": true,
         "0xe708": true,
@@ -35,6 +49,23 @@
         "0x539": true
       },
       "snapsInstallPrivacyWarningShown": true
+    },
+    "BridgeController": {
+      "bridgeState": {
+        "bridgeFeatureFlags": {
+          "extensionSupport": "boolean",
+          "srcNetworkAllowlist": {
+            "0": "string",
+            "1": "string",
+            "2": "string"
+          },
+          "destNetworkAllowlist": {
+            "0": "string",
+            "1": "string",
+            "2": "string"
+          }
+        }
+      }
     },
     "CurrencyController": {
       "currentCurrency": "usd",
@@ -57,23 +88,20 @@
       "fragments": "object",
       "metaMetricsId": "fake-metrics-id",
       "participateInMetaMetrics": true,
+      "dataCollectionForMarketing": "boolean",
       "traits": "object"
+    },
+    "MetaMetricsDataDeletionController": {
+      "metaMetricsDataDeletionId": null,
+      "metaMetricsDataDeletionTimestamp": 0
     },
     "NetworkController": {
       "selectedNetworkClientId": "string",
+      "networkConfigurations": "object",
       "networksMetadata": {
         "networkConfigurationId": { "EIPS": {}, "status": "available" }
       },
-      "providerConfig": {
-        "chainId": "0x539",
-        "nickname": "Localhost 8545",
-        "rpcPrefs": "object",
-        "rpcUrl": "string",
-        "ticker": "ETH",
-        "type": "rpc",
-        "id": "networkConfigurationId"
-      },
-      "networkConfigurations": "object"
+      "providerConfig": "object"
     },
     "OnboardingController": {
       "completedOnboarding": true,
@@ -87,6 +115,7 @@
       "currentLocale": "en",
       "useExternalServices": "boolean",
       "dismissSeedBackUpReminder": true,
+      "overrideContentSecurityPolicyHeader": true,
       "featureFlags": {},
       "forgottenPassword": false,
       "identities": "object",
@@ -100,9 +129,14 @@
         "showExtensionInFullSizeView": false,
         "showFiatInTestnets": false,
         "showTestNetworks": false,
-        "smartTransactionsOptInStatus": false,
-        "useNativeCurrencyAsPrimaryCurrency": true,
-        "petnamesEnabled": true
+        "smartTransactionsOptInStatus": true,
+        "showNativeTokenAsMainBalance": true,
+        "petnamesEnabled": true,
+        "isRedesignedConfirmationsDeveloperEnabled": "boolean",
+        "showConfirmationAdvancedDetails": false,
+        "tokenSortConfig": "object",
+        "showMultiRpcModal": "boolean",
+        "shouldShowAggregatedBalancePopover": "boolean"
       },
       "selectedAddress": "string",
       "theme": "light",
@@ -113,13 +147,18 @@
       "useTokenDetection": false,
       "useCurrencyRateCheck": true,
       "useMultiAccountBalanceChecker": true,
-      "useRequestQueue": true
+      "useRequestQueue": true,
+      "isMultiAccountBalancesEnabled": "boolean",
+      "showIncomingTransactions": "object"
     },
+    "QueuedRequestController": { "queuedRequestCount": 0 },
     "SelectedNetworkController": { "domains": "object" },
     "SmartTransactionsController": {
       "smartTransactionsState": {
         "fees": {},
+        "feesByChainId": "object",
         "liveness": true,
+        "livenessByChainId": "object",
         "smartTransactions": "object"
       }
     },
@@ -131,6 +170,27 @@
       "detectedTokens": "object",
       "ignoredTokens": "object",
       "tokens": "object"
+    },
+    "BridgeController": {
+      "bridgeState": {
+        "bridgeFeatureFlags": {
+          "extensionSupport": "boolean",
+          "srcNetworkAllowlist": {
+            "0": "string",
+            "1": "string",
+            "2": "string"
+          },
+          "destNetworkAllowlist": {
+            "0": "string",
+            "1": "string",
+            "2": "string"
+          }
+        },
+        "destTokens": {},
+        "destTopAssets": {},
+        "srcTokens": {},
+        "srcTopAssets": {}
+      }
     },
     "TransactionController": { "transactions": "object" },
     "config": "object",

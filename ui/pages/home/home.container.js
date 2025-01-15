@@ -20,9 +20,7 @@ import {
   activeTabHasPermissions,
   getUseExternalServices,
   getFirstPermissionRequest,
-  ///: BEGIN:ONLY_INCLUDE_IF(snaps)
   getFirstSnapInstallOrUpdateRequest,
-  ///: END:ONLY_INCLUDE_IF
   getIsMainnet,
   getOriginOfCurrentTab,
   getTotalUnapprovedCount,
@@ -46,11 +44,13 @@ import {
   getNewTokensImportedError,
   hasPendingApprovals,
   getSelectedInternalAccount,
+  getQueuedRequestCount,
+  getEditedNetwork,
+  getPrioritizedUnapprovedTemplatedConfirmations,
   ///: BEGIN:ONLY_INCLUDE_IF(build-mmi)
   getAccountType,
   ///: END:ONLY_INCLUDE_IF
 } from '../../selectors';
-import { getIsSmartTransactionsOptInModalAvailable } from '../../../shared/modules/selectors';
 
 import {
   closeNotificationPopup,
@@ -68,6 +68,8 @@ import {
   setNewTokensImported,
   setActiveNetwork,
   setNewTokensImportedError,
+  setDataCollectionForMarketing,
+  setEditedNetwork,
 } from '../../store/actions';
 import {
   hideWhatsNewPopup,
@@ -75,6 +77,9 @@ import {
 } from '../../ducks/app/app';
 import { getWeb3ShimUsageAlertEnabledness } from '../../ducks/metamask/metamask';
 import { getSwapsFeatureIsLive } from '../../ducks/swaps/swaps';
+import { fetchBuyableChains } from '../../ducks/ramps';
+// TODO: Remove restricted import
+// eslint-disable-next-line import/no-restricted-paths
 import { getEnvironmentType } from '../../../app/scripts/lib/util';
 import { getIsBrowserDeprecated } from '../../helpers/utils/util';
 import {
@@ -98,14 +103,22 @@ const mapStateToProps = (state) => {
     connectedStatusPopoverHasBeenShown,
     defaultHomeActiveTabName,
     swapsState,
+    dataCollectionForMarketing,
+    participateInMetaMetrics,
     firstTimeFlowType,
     completedOnboarding,
   } = metamask;
   const { address: selectedAddress } = getSelectedInternalAccount(state);
   const { forgottenPassword } = metamask;
   const totalUnapprovedCount = getTotalUnapprovedCount(state);
+  const queuedRequestCount = getQueuedRequestCount(state);
+  const totalUnapprovedAndQueuedRequestCount =
+    totalUnapprovedCount + queuedRequestCount;
   const swapsEnabled = getSwapsFeatureIsLive(state);
   const pendingConfirmations = getUnapprovedTemplatedConfirmations(state);
+  const pendingConfirmationsPrioritized =
+    getPrioritizedUnapprovedTemplatedConfirmations(state);
+
   ///: BEGIN:ONLY_INCLUDE_IF(build-mmi)
   const institutionalConnectRequests = getInstitutionalConnectRequests(state);
   ///: END:ONLY_INCLUDE_IF
@@ -120,12 +133,10 @@ const mapStateToProps = (state) => {
 
   // getFirstPermissionRequest should be updated with snap update logic once we hit main extension release
 
-  ///: BEGIN:ONLY_INCLUDE_IF(snaps)
   if (!firstPermissionsRequest) {
     firstPermissionsRequest = getFirstSnapInstallOrUpdateRequest(state);
     firstPermissionsRequestId = firstPermissionsRequest?.metadata.id || null;
   }
-  ///: END:ONLY_INCLUDE_IF
 
   const originOfCurrentTab = getOriginOfCurrentTab(state);
   const shouldShowWeb3ShimUsageNotification =
@@ -141,9 +152,17 @@ const mapStateToProps = (state) => {
 
   const hasAllowedPopupRedirectApprovals = hasPendingApprovals(state, [
     ///: BEGIN:ONLY_INCLUDE_IF(keyring-snaps)
+    SNAP_MANAGE_ACCOUNTS_CONFIRMATION_TYPES.confirmAccountCreation,
+    SNAP_MANAGE_ACCOUNTS_CONFIRMATION_TYPES.confirmAccountRemoval,
+    SNAP_MANAGE_ACCOUNTS_CONFIRMATION_TYPES.showNameSnapAccount,
     SNAP_MANAGE_ACCOUNTS_CONFIRMATION_TYPES.showSnapAccountRedirect,
     ///: END:ONLY_INCLUDE_IF
   ]);
+
+  const TEMPORARY_DISABLE_WHATS_NEW = true;
+  const showWhatsNewPopup = TEMPORARY_DISABLE_WHATS_NEW
+    ? false
+    : getShowWhatsNewPopup(state);
 
   return {
     useExternalServices: getUseExternalServices(state),
@@ -156,9 +175,12 @@ const mapStateToProps = (state) => {
     shouldShowSeedPhraseReminder: getShouldShowSeedPhraseReminder(state),
     isPopup,
     isNotification,
+    dataCollectionForMarketing,
     selectedAddress,
     firstPermissionsRequestId,
     totalUnapprovedCount,
+    totalUnapprovedAndQueuedRequestCount,
+    participateInMetaMetrics,
     hasApprovalFlows: getApprovalFlows(state)?.length > 0,
     connectedStatusPopoverHasBeenShown,
     defaultHomeActiveTabName,
@@ -171,15 +193,17 @@ const mapStateToProps = (state) => {
     originOfCurrentTab,
     shouldShowWeb3ShimUsageNotification,
     pendingConfirmations,
+    pendingConfirmationsPrioritized,
     infuraBlocked: getInfuraBlocked(state),
     announcementsToShow: getSortedAnnouncementsToShow(state).length > 0,
-    showWhatsNewPopup: getShowWhatsNewPopup(state),
+    showWhatsNewPopup,
     showRecoveryPhraseReminder: getShowRecoveryPhraseReminder(state),
     showTermsOfUsePopup: getShowTermsOfUse(state),
     showOutdatedBrowserWarning:
       getIsBrowserDeprecated() && getShowOutdatedBrowserWarning(state),
     seedPhraseBackedUp,
     newNetworkAddedName: getNewNetworkAdded(state),
+    editedNetwork: getEditedNetwork(state),
     isSigningQRHardwareTransaction: getIsSigningQRHardwareTransaction(state),
     newNftAddedMessage: getNewNftAddedMessage(state),
     removeNftMessage: getRemoveNftMessage(state),
@@ -198,8 +222,7 @@ const mapStateToProps = (state) => {
     custodianDeepLink: getCustodianDeepLink(state),
     accountType: getAccountType(state),
     ///: END:ONLY_INCLUDE_IF
-    isSmartTransactionsOptInModalAvailable:
-      getIsSmartTransactionsOptInModalAvailable(state),
+    showMultiRpcModal: state.metamask.preferences.showMultiRpcModal,
   };
 };
 
@@ -209,6 +232,8 @@ const mapDispatchToProps = (dispatch) => {
   ///: END:ONLY_INCLUDE_IF
 
   return {
+    setDataCollectionForMarketing: (val) =>
+      dispatch(setDataCollectionForMarketing(val)),
     closeNotificationPopup: () => closeNotificationPopup(),
     setConnectedStatusPopoverHasBeenShown: () =>
       dispatch(setConnectedStatusPopoverHasBeenShown()),
@@ -245,6 +270,9 @@ const mapDispatchToProps = (dispatch) => {
     clearNewNetworkAdded: () => {
       dispatch(setNewNetworkAdded({}));
     },
+    clearEditedNetwork: () => {
+      dispatch(setEditedNetwork());
+    },
     setActiveNetwork: (networkConfigurationId) => {
       dispatch(setActiveNetwork(networkConfigurationId));
     },
@@ -278,6 +306,7 @@ const mapDispatchToProps = (dispatch) => {
     ///: END:ONLY_INCLUDE_IF
     setBasicFunctionalityModalOpen: () =>
       dispatch(openBasicFunctionalityModal()),
+    fetchBuyableChains: () => dispatch(fetchBuyableChains()),
   };
 };
 

@@ -6,11 +6,11 @@ const exec = util.promisify(require('node:child_process').exec);
 const PPOM_VERSION_URL =
   'https://static.cx.metamask.io/api/v1/confirmations/ppom/ppom_version.json';
 const PPOM_CONFIG_URL =
-  'https://static.metafi.codefi.network/api/v1/confirmations/ppom/config/0x1/';
+  'https://static.cx.metamask.io/api/v1/confirmations/ppom/config/0x1/';
 const PPOM_STALE_URL =
-  'https://static.metafi.codefi.network/api/v1/confirmations/ppom/stale/0x1/';
+  'https://static.cx.metamask.io/api/v1/confirmations/ppom/stale/0x1/';
 const PPOM_STALE_DIFF_URL =
-  'https://static.metafi.codefi.network/api/v1/confirmations/ppom/stale_diff/0x1/';
+  'https://static.cx.metamask.io/api/v1/confirmations/ppom/stale_diff/0x1/';
 const MOCK_CDN_FOLDER_URL = 'test/e2e/mock-cdn/';
 
 const CDN_CONFIG_PATH = 'test/e2e/mock-cdn/cdn-config.txt';
@@ -65,6 +65,11 @@ async function updateMockCdnFiles() {
   const { mainnetConfigVersion, mainnetStaleVersion, mainnetStaleDiffVersion } =
     await getFileVersions();
 
+  // Function to create header object with Etag and Content-Type
+  const createHeaderObject = (etag) => ({
+    Etag: etag,
+    'Content-Type': 'text/plain',
+  });
   // updating cdn-config-res-headers.json file
   const configResponse = await fetch(
     `${PPOM_CONFIG_URL}${mainnetConfigVersion}`,
@@ -76,7 +81,7 @@ async function updateMockCdnFiles() {
   const configHeaders = configResponse.headers;
 
   const etagConfig = configHeaders.get('etag');
-  const etagConfigObject = { Etag: etagConfig };
+  const etagConfigObject = createHeaderObject(etagConfig);
 
   writeFileSync(
     `${MOCK_CDN_FOLDER_URL}cdn-config-res-headers.json`,
@@ -91,7 +96,7 @@ async function updateMockCdnFiles() {
   const staleHeaders = staleResponse.headers;
 
   const etagStale = staleHeaders.get('etag');
-  const etagStaleObject = { Etag: etagStale };
+  const etagStaleObject = createHeaderObject(etagStale);
 
   writeFileSync(
     `${MOCK_CDN_FOLDER_URL}cdn-stale-res-headers.json`,
@@ -109,7 +114,7 @@ async function updateMockCdnFiles() {
   const staleDiffHeaders = staleDiffResponse.headers;
 
   const etagStaleDiff = staleDiffHeaders.get('etag');
-  const etagStaleDiffObject = { Etag: etagStaleDiff };
+  const etagStaleDiffObject = createHeaderObject(etagStaleDiff);
 
   writeFileSync(
     `${MOCK_CDN_FOLDER_URL}cdn-stale-diff-res-headers.json`,

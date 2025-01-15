@@ -1,9 +1,12 @@
 import React from 'react';
 import configureMockStore from 'redux-mock-store';
-import { EthAccountType, EthMethod } from '@metamask/keyring-api';
+import { EthAccountType } from '@metamask/keyring-api';
 import { renderWithProvider } from '../../../../../../test/lib/render-helpers';
 import { sanitizeMessage } from '../../../../../helpers/utils/util';
 import Identicon from '../../../../../components/ui/identicon';
+import { ETH_EOA_METHODS } from '../../../../../../shared/constants/eth-methods';
+import { CHAIN_IDS } from '../../../../../../shared/constants/network';
+import { mockNetworkState } from '../../../../../../test/stub/networks';
 import SignatureRequestData from './signature-request-data';
 
 describe('Signature Request Data', () => {
@@ -35,10 +38,7 @@ describe('Signature Request Data', () => {
             unlisted: false,
           },
         },
-        providerConfig: {
-          type: 'test',
-          chainId: '0x5',
-        },
+        ...mockNetworkState({ chainId: CHAIN_IDS.GOERLI }),
         internalAccounts: {
           accounts: {
             'cf8dace4-9439-4bd4-b3a8-88c821c8fcb3': {
@@ -51,7 +51,7 @@ describe('Signature Request Data', () => {
                 },
               },
               options: {},
-              methods: [...Object.values(EthMethod)],
+              methods: ETH_EOA_METHODS,
               type: EthAccountType.Eoa,
             },
             '07c2cfec-36c9-46c4-8115-3836d3ac9047': {
@@ -64,7 +64,7 @@ describe('Signature Request Data', () => {
                 },
               },
               options: {},
-              methods: [...Object.values(EthMethod)],
+              methods: ETH_EOA_METHODS,
               type: EthAccountType.Eoa,
             },
           },

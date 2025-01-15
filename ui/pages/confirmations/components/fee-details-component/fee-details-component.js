@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
 import {
   AlignItems,
   Display,
@@ -8,17 +8,18 @@ import {
   IconColor,
   JustifyContent,
   Size,
+  TextColor,
   TextVariant,
 } from '../../../../helpers/constants/design-system';
 import {
-  BUTTON_VARIANT,
   Box,
   Button,
+  ButtonVariant,
   IconName,
   Text,
 } from '../../../../components/component-library';
 import TransactionDetailItem from '../transaction-detail-item/transaction-detail-item.component';
-import { getPreferences } from '../../../../selectors';
+import { getShouldShowFiat } from '../../../../selectors';
 import { useI18nContext } from '../../../../hooks/useI18nContext';
 import LoadingHeartBeat from '../../../../components/ui/loading-heartbeat';
 import UserPreferencedCurrencyDisplay from '../../../../components/app/user-preferenced-currency-display/user-preferenced-currency-display.component';
@@ -33,8 +34,7 @@ export default function FeeDetailsComponent({
 }) {
   const layer1GasFee = txData?.layer1GasFee ?? null;
   const [expandFeeDetails, setExpandFeeDetails] = useState(false);
-
-  const { useNativeCurrencyAsPrimaryCurrency } = useSelector(getPreferences);
+  const shouldShowFiat = useSelector(getShouldShowFiat);
 
   const t = useI18nContext();
 
@@ -49,33 +49,52 @@ export default function FeeDetailsComponent({
       return (
         <div className="confirm-page-container-content__total-value">
           <LoadingHeartBeat estimateUsed={txData?.userFeeLevel} />
-          <UserPreferencedCurrencyDisplay
-            type={SECONDARY}
-            key="total-detail-text"
-            value={value}
-            hideLabel={Boolean(useNativeCurrencyAsPrimaryCurrency)}
-          />
+          {shouldShowFiat && (
+            <UserPreferencedCurrencyDisplay
+              type={SECONDARY}
+              key="total-detail-text"
+              value={value}
+              suffixProps={{
+                color: TextColor.textAlternative,
+                variant: TextVariant.bodySmBold,
+              }}
+              textProps={{
+                color: TextColor.textAlternative,
+                variant: TextVariant.bodySmBold,
+              }}
+              hideLabel
+            />
+          )}
         </div>
       );
     },
-    [txData, useNativeCurrencyAsPrimaryCurrency],
+    [txData],
   );
 
   const renderTotalDetailValue = useCallback(
     (value) => {
       return (
-        <div className="confirm-page-container-content__total-value">
+        <Box className="confirm-page-container-content__total-value">
           <LoadingHeartBeat estimateUsed={txData?.userFeeLevel} />
-          <UserPreferencedCurrencyDisplay
-            type={PRIMARY}
-            key="total-detail-value"
-            value={value}
-            hideLabel={!useNativeCurrencyAsPrimaryCurrency}
-          />
-        </div>
+          {shouldShowFiat && (
+            <UserPreferencedCurrencyDisplay
+              type={PRIMARY}
+              key="total-detail-value"
+              value={value}
+              suffixProps={{
+                color: TextColor.textAlternative,
+                variant: TextVariant.bodySm,
+              }}
+              textProps={{
+                color: TextColor.textAlternative,
+                variant: TextVariant.bodySm,
+              }}
+            />
+          )}
+        </Box>
       );
     },
-    [txData, useNativeCurrencyAsPrimaryCurrency],
+    [txData],
   );
 
   const hasLayer1GasFee = layer1GasFee !== null;
@@ -90,7 +109,7 @@ export default function FeeDetailsComponent({
       >
         {!hideGasDetails && hasLayer1GasFee && (
           <Box
-            padding={4}
+            paddingTop={4}
             display={Display.Flex}
             alignItems={AlignItems.center}
             justifyContent={JustifyContent.center}
@@ -98,17 +117,18 @@ export default function FeeDetailsComponent({
             <Button
               style={{ textDecoration: 'none' }}
               size={Size.Xs}
-              variant={BUTTON_VARIANT.LINK}
+              variant={ButtonVariant.Link}
               endIconName={
                 expandFeeDetails ? IconName.ArrowUp : IconName.ArrowDown
               }
-              color={IconColor.primaryDefault}
+              color={IconColor.iconAlternative}
               data-testid="expand-fee-details-button"
               onClick={() => setExpandFeeDetails(!expandFeeDetails)}
             >
               <Text
-                variant={TextVariant.bodySm}
-                color={IconColor.primaryDefault}
+                variant={TextVariant.bodyMdMedium}
+                color={TextColor.textAlternative}
+                paddingInlineEnd={1}
               >
                 {t('feeDetails')}
               </Text>
@@ -118,34 +138,47 @@ export default function FeeDetailsComponent({
       </Box>
 
       {!hideGasDetails && expandFeeDetails && (
-        <Box display={Display.Flex} flexDirection={FlexDirection.Column}>
+        <Box
+          display={Display.Flex}
+          flexDirection={FlexDirection.Column}
+          paddingTop={4}
+        >
           {hasLayer1GasFee && (
             <TransactionDetailItem
-              detailTitle={t('layer2Fees')}
+              detailTitle={
+                <Text
+                  color={TextColor.textAlternative}
+                  variant={TextVariant.bodySmMedium}
+                >
+                  {t('layer2Fees')}
+                </Text>
+              }
               detailText={
                 useCurrencyRateCheck &&
                 renderTotalDetailText(hexMinimumTransactionFee)
               }
               detailTotal={renderTotalDetailValue(hexMinimumTransactionFee)}
-              boldHeadings={false}
             />
           )}
           {layer1GasFee && (
             <TransactionDetailItem
-              detailTitle={t('layer1Fees')}
-              detailText={
-                useCurrencyRateCheck && renderTotalDetailText(layer1GasFee)
+              detailTitle={
+                <Text
+                  color={TextColor.textAlternative}
+                  variant={TextVariant.bodySmMedium}
+                >
+                  {t('layer1Fees')}
+                </Text>
               }
+              detailText={shouldShowFiat && renderTotalDetailText(layer1GasFee)}
               detailTotal={renderTotalDetailValue(layer1GasFee)}
-              boldHeadings={false}
             />
           )}
           {!hasLayer1GasFee && (
             <TransactionDetailItem
               detailTitle={t('total')}
               detailText={
-                useCurrencyRateCheck &&
-                renderTotalDetailText(getTransactionFeeTotal)
+                shouldShowFiat && renderTotalDetailText(getTransactionFeeTotal)
               }
               detailTotal={renderTotalDetailValue(getTransactionFeeTotal)}
             />

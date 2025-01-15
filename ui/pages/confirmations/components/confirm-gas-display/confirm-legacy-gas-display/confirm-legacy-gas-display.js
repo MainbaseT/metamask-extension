@@ -5,7 +5,6 @@ import { useSelector } from 'react-redux';
 import { useI18nContext } from '../../../../../hooks/useI18nContext';
 import {
   getIsMainnet,
-  getPreferences,
   getUnapprovedTransactions,
   getUseCurrencyRateCheck,
   transactionFeeSelector,
@@ -18,16 +17,12 @@ import UserPreferencedCurrencyDisplay from '../../../../../components/app/user-p
 import InfoTooltip from '../../../../../components/ui/info-tooltip';
 import LoadingHeartBeat from '../../../../../components/ui/loading-heartbeat';
 import {
-  FONT_STYLE,
   TextVariant,
   TextColor,
 } from '../../../../../helpers/constants/design-system';
 import { useDraftTransactionWithTxParams } from '../../../hooks/useDraftTransactionWithTxParams';
-import {
-  Icon,
-  IconName,
-  Text,
-} from '../../../../../components/component-library';
+import { Icon, IconName } from '../../../../../components/component-library';
+import { addHexes } from '../../../../../../shared/modules/conversion.utils';
 
 const renderHeartBeatIfNotInTest = () =>
   process.env.IN_TEST ? null : <LoadingHeartBeat />;
@@ -38,16 +33,25 @@ const ConfirmLegacyGasDisplay = ({ 'data-testid': dataTestId } = {}) => {
   // state selectors
   const isMainnet = useSelector(getIsMainnet);
   const useCurrencyRateCheck = useSelector(getUseCurrencyRateCheck);
-  const { useNativeCurrencyAsPrimaryCurrency } = useSelector(getPreferences);
   const unapprovedTxs = useSelector(getUnapprovedTransactions);
   const transactionData = useDraftTransactionWithTxParams();
   const txData = useSelector((state) => txDataSelector(state));
-  const { id: transactionId, dappSuggestedGasFees } = txData;
+  const { id: transactionId, dappSuggestedGasFees, layer1GasFee } = txData;
   const transaction = Object.keys(transactionData).length
     ? transactionData
     : unapprovedTxs[transactionId] || {};
   const { hexMinimumTransactionFee, hexMaximumTransactionFee } = useSelector(
     (state) => transactionFeeSelector(state, transaction),
+  );
+
+  const estimatedHexMinFeeTotal = addHexes(
+    hexMinimumTransactionFee,
+    layer1GasFee ?? '0x0',
+  );
+
+  const estimatedHexMaxFeeTotal = addHexes(
+    hexMaximumTransactionFee,
+    layer1GasFee ?? '0x0',
   );
 
   return (
@@ -101,8 +105,8 @@ const ConfirmLegacyGasDisplay = ({ 'data-testid': dataTestId } = {}) => {
             {renderHeartBeatIfNotInTest()}
             <UserPreferencedCurrencyDisplay
               type={SECONDARY}
-              value={hexMinimumTransactionFee}
-              hideLabel={Boolean(useNativeCurrencyAsPrimaryCurrency)}
+              value={estimatedHexMinFeeTotal}
+              hideLabel
             />
           </div>
         )
@@ -112,8 +116,15 @@ const ConfirmLegacyGasDisplay = ({ 'data-testid': dataTestId } = {}) => {
           {renderHeartBeatIfNotInTest()}
           <UserPreferencedCurrencyDisplay
             type={PRIMARY}
-            value={hexMinimumTransactionFee}
-            hideLabel={!useNativeCurrencyAsPrimaryCurrency}
+            value={estimatedHexMinFeeTotal}
+            suffixProps={{
+              color: TextColor.textDefault,
+              variant: TextVariant.bodyMdBold,
+            }}
+            textProps={{
+              color: TextColor.textDefault,
+              variant: TextVariant.bodyMdBold,
+            }}
             numberOfDecimals={6}
           />
         </div>
@@ -128,26 +139,12 @@ const ConfirmLegacyGasDisplay = ({ 'data-testid': dataTestId } = {}) => {
             <UserPreferencedCurrencyDisplay
               key="editGasSubTextFeeAmount"
               type={PRIMARY}
-              value={hexMaximumTransactionFee}
-              hideLabel={!useNativeCurrencyAsPrimaryCurrency}
+              value={estimatedHexMaxFeeTotal}
             />
           </div>
         </>
       }
-      subTitle={
-        <>
-          {dappSuggestedGasFees && (
-            <Text
-              variant={TextVariant.bodySm}
-              fontStyle={FONT_STYLE.ITALIC}
-              color={TextColor.textAlternative}
-              as="h6"
-            >
-              {t('transactionDetailDappGasMoreInfo')}
-            </Text>
-          )}
-        </>
-      }
+      subTitle={dappSuggestedGasFees && t('transactionDetailDappGasMoreInfo')}
     />
   );
 };
